@@ -1,0 +1,9 @@
+{
+  "name": "dstack-dasboard",
+  "version": "0.0.1",
+  "dependencies": {
+    "express":      "latest",
+    "express-hbs":  "latest",
+    "http-proxy":   "latest"
+  }
+}
