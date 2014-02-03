@@ -1,3 +1,7 @@
+.nav LI {
+  padding: 0 10px;
+}
+
 .host-wrapper {
   float: left;
   margin: 5px;
@@ -14,9 +18,10 @@
 
 .host-contents {
   padding: 5px;
-  border: 1px solid #eee;
   background-color: white;
   max-width: 100px;
+  border-bottom-left-radius: 5px;
+  border-bottom-right-radius: 5px;
 }
 
 .hide-names .inst-name {

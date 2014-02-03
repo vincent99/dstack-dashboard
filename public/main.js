@@ -61,25 +61,36 @@ function renderInstances(data) {
   var hosts = {};
 
   data.forEach(function(inst) {
-//    console.log(inst);
+    var $elem = instanceElem(inst.id);
+    if ( $elem )
+    {
+      if ( $elem.data('transitioning') != inst.transitioning )
+        $elem.animate({backgroundColor: instanceColor(inst)}, 1000);
 
-    if ( instanceExists(inst.id) )
       return;
+    }
 
     if ( !hosts[inst.requestedHostId] )
       hosts[inst.requestedHostId] = [];
 
-    hosts[inst.requestedHostId].push( tplInstance(inst) );
+    hosts[inst.requestedHostId].push( instanceTpl(inst) );
   });
 
   var keys = Object.keys(hosts);
   keys.forEach(function(hostId) {
-    var $elem = $('#host-'+hostId+' .host-contents');
-    $elem.append.call($elem,hosts[hostId]);
+    var $par = $('#host-'+hostId+' .host-contents');
+    $par.append.call($par,hosts[hostId]);
   });
 }
 
+var pending = {};
 function loadInstance(id, cb) {
+  pending[id] = pending[id] || 0;
+  pending[id]++;
+
+  if ( pending[id] > 1 )
+    return;
+
   ajax('/v1/instances/'+id).then(done).fail(fail);
 
   function done(res) {
@@ -87,6 +98,18 @@ function loadInstance(id, cb) {
 
     if ( cb )
       cb(res);
+
+    if ( pending[id] > 1 )
+    {
+      pending[id] = 0;
+      setTimeout(function() {
+        loadInstance(id);
+      }, 1000);
+    }
+    else
+    {
+      delete pending[id];
+    }
   }
 
   function fail(xhr) {
@@ -94,12 +117,25 @@ function loadInstance(id, cb) {
   }
 }
 
-function instanceExists(id) {
-  return $('#inst-'+id).length > 0;
+function instanceElem(id) {
+  var $elem = $('#inst-'+id);
+  if ( $elem.length > 0 )
+    return $elem;
+  else
+    return null;
 }
 
-function tplInstance(inst) {
-  return '<div id="inst-' + inst.id + '" class="inst">' +
+function instanceColor(inst) {
+  if ( inst.transitioning == 'yes' )
+    return "#0000ff";
+  else if ( inst.transitioning == 'error' )
+    return "#ff0000";
+  else
+    return "#ffffff";
+}
+
+function instanceTpl(inst) {
+  return '<div data-transitioning="'+inst.transitioning+'" id="inst-' + inst.id + '" class="inst" style="background-color: '+ instanceColor(inst) + ';">' +
     '<div class="inst-name">'+(inst.name || inst.id)+'</div>' +
   '</div>';
 }
@@ -108,7 +144,7 @@ function tplInstance(inst) {
 
 function connect() {
   var url = 'ws://localhost:8080/v1/subscribe?eventNames=state.change&eventNames=api.change';
-  console.log('Connecting to',url);
+  note('Connecting to: '+url);
   var sock = new WebSocket(url);
 
   sock.onmessage = function(event) {
@@ -123,7 +159,7 @@ function connect() {
     }
 
     note(str);
-    console.log('Message:',d);
+//    console.log('Message:',d);
 
     if ( d.resourceType == 'host' )
       hostChanged(d.resourceId, d);
@@ -142,22 +178,5 @@ function hostChanged(id, change) {
 }
 
 function instanceChanged(id, transitioning) {
-  var $elem = $('#host-'+id);
-  if ( $elem.length )
-  {
-    if ( transitioning == 'yes' )
-      $elem.animate({backgroundColor: "#0000ff"}, 1000);
-    else if ( transitioning == 'error' )
-      $elem.animate({backgroundColor: "#ff0000"}, 1000);
-    else
-      $elem.animate({backgroundColor: "#ffffff"}, 1000);
-  }
-  else
-  {
-    loadInstance(id, function(inst) {
-//      instanceChanged(id, inst.transitioning);
-    });
-
-//    note("Heard about instance "+ id + " but I don't have a box for that, reloading");
-  }
+  loadInstance(id);
 }

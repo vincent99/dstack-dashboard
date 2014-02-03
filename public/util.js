@@ -11,6 +11,9 @@ function ajax(url) {
 var MAX_NOTES = 20;
 var FADE_MS = 500;
 function note(str) {
+  if ( ! $('#show-messages')[0].checked )
+    return;
+
   var neu = $('<div/>', {'class': 'note'}).text(str).fadeIn(FADE_MS, limit);
   $('#note').prepend(neu);
 
