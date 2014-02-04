@@ -40,13 +40,13 @@ function loadHosts(cb) {
 }
 
 function loadInstances(cb) {
-  note('Loading instances');
+  //note('Loading instances');
   ajax('/v1/instances').then(done).fail(fail);
 
   function done(res) {
     renderInstances(res.data);
 
-    note('Rendered instances');
+    //note('Rendered instances');
     if ( cb )
       cb();
   }
@@ -57,7 +57,7 @@ function loadInstances(cb) {
 }
 
 function renderInstances(data) {
-  note('Render Instances');
+  //note('Render Instances');
   var hosts = {};
 
   data.forEach(function(inst) {
@@ -65,7 +65,7 @@ function renderInstances(data) {
     if ( $elem )
     {
       if ( $elem.data('transitioning') != inst.transitioning )
-        $elem.animate({backgroundColor: instanceColor(inst)}, 1000);
+        $elem.css({backgroundColor: instanceColor(inst)});
 
       return;
     }
@@ -83,14 +83,13 @@ function renderInstances(data) {
   });
 }
 
-var pending = {};
+var queue = async.queue(_getInstance,4);
+
 function loadInstance(id, cb) {
-  pending[id] = pending[id] || 0;
-  pending[id]++;
+  queue.push(id, cb);
+}
 
-  if ( pending[id] > 1 )
-    return;
-
+function _getInstance(id, cb) {
   ajax('/v1/instances/'+id).then(done).fail(fail);
 
   function done(res) {
@@ -98,18 +97,6 @@ function loadInstance(id, cb) {
 
     if ( cb )
       cb(res);
-
-    if ( pending[id] > 1 )
-    {
-      pending[id] = 0;
-      setTimeout(function() {
-        loadInstance(id);
-      }, 1000);
-    }
-    else
-    {
-      delete pending[id];
-    }
   }
 
   function fail(xhr) {
