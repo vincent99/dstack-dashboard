@@ -19,7 +19,7 @@
 .host-contents {
   padding: 5px;
   background-color: white;
-  max-width: 100px;
+  max-width: 125px;
   border-bottom-left-radius: 5px;
   border-bottom-right-radius: 5px;
 }
@@ -34,17 +34,21 @@
 }
 
 .inst {
-  border: 1px solid #aaa;
+  border: 1px solid transparent;
+  border-radius: 5px;
   padding: 1px;
   margin: 1px;
-  min-width: 1px;
-  min-height: 1px;
+  min-width: 3px;
+  min-height: 3px;
+  font-size: 11px;
+  color: #333;
 }
 
 .inst-name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding: 0 3px;
 }
 
 .note {
