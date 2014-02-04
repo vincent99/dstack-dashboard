@@ -1,4 +1,5 @@
 var USE_HOSTMAP = true;
+var MAX_RETRIES = 5;
 
 updateShowNames();
 loadHosts(connect);
@@ -131,9 +132,9 @@ function _getInstance(id, cb) {
     if ( cb )
       cb();
 
-    if ( !failed[id] )
+    if ( !failed[id] || failed[id] < MAX_RETRIES )
     {
-      failed[id] = 1;
+      failed[id] = failed[id]||0 + 1;
       queue.push(id);
     }
   }
