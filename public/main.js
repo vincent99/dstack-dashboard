@@ -123,6 +123,8 @@ function _getInstance(id, cb) {
 
   function fail(xhr) {
     alert('Error (' + xhr.status + '): ' + xhr.responseText);
+    if ( cb )
+      cb();
   }
 }
 
