@@ -93,27 +93,32 @@ function renderInstances(data) {
   });
 }
 
-var active = {};
 var pending = {};
+var failed = {};
 var queue = async.queue(_getInstance,4);
 
 function loadInstance(id) {
+  var now = (new Date()).getTime();
 
-  if ( pending[id] && !active[id] )
-    return;
-
-  pending[id] = 1;
+  if ( pending[id] )
+  {
+    if ( pending[id] + 5000 < now )
+      return;
+  }
+  else
+  {
+    pending[id] = now;
+  }
 
   queue.push(id);
 }
 
 function _getInstance(id, cb) {
   ajax('/v1/instances/'+id+ (USE_HOSTMAP ? '?include=instanceHostMaps' : '')).then(done).fail(fail);
-  active[id] = 1;
 
   function done(res) {
     delete pending[id];
-    delete active[id];
+    delete failed[id];
 
     renderInstances([res]);
 
@@ -125,6 +130,12 @@ function _getInstance(id, cb) {
     alert('Error (' + xhr.status + '): ' + xhr.responseText);
     if ( cb )
       cb();
+
+    if ( !failed[id] )
+    {
+      failed[id] = 1;
+      queue.push(id);
+    }
   }
 }
 
