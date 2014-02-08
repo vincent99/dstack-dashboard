@@ -1,21 +1,35 @@
 var USE_HOSTMAP = true;
 var MAX_RETRIES = 5;
 
+initCheckboxes();
 updateShowNames();
 loadHosts(connect);
 
 $('#show-names').on('click', updateShowNames);
+$('#show-messages').on('click', updateShowMessages);
 
 // ------------------------------------
+
+function initCheckboxes() {
+  var c = cookies();
+  $('#show-names').attr('checked', c.names == '1');
+  $('#show-messages').attr('checked', c.messages == '1');
+}
 
 function updateShowNames() {
   var show = $('#show-names')[0].checked;
   $('#hosts').toggleClass('hide-names', !show);
+  setCookie('names', (show ? 1 : 0))
+};
+
+function updateShowMessages() {
+  var show = $('#show-messages')[0].checked;
+  setCookie('messages', (show ? 1 : 0))
 };
 
 function loadHosts(cb, url) {
   note('Loading hosts');
-  ajax('/v1/hosts').then(done).fail(fail);
+  ajax('/v1/hosts?removed_null').then(done).fail(fail);
   
   function done(res) {
     var html = [];
@@ -44,7 +58,7 @@ function loadHosts(cb, url) {
 
 function loadInstances(cb, url) {
   //note('Loading instances');
-  ajax(url||'/v1/instances' + (USE_HOSTMAP ? '?include=instanceHostMaps' : '')).then(done).fail(fail);
+  ajax(url||'/v1/instances' + (USE_HOSTMAP ? '?removed_null&include=instanceHostMaps' : '')).then(done).fail(fail);
 
   function done(res) {
     renderInstances(res.data);
@@ -115,7 +129,7 @@ function loadInstance(id) {
 }
 
 function _getInstance(id, cb) {
-  ajax('/v1/instances/'+id+ (USE_HOSTMAP ? '?include=instanceHostMaps' : '')).then(done).fail(fail);
+  ajax('/v1/instances/'+id+ (USE_HOSTMAP ? '?removed_null&include=instanceHostMaps' : '')).then(done).fail(fail);
 
   function done(res) {
     delete pending[id];
@@ -166,7 +180,7 @@ function instanceTpl(inst) {
 // ------------------------------------
 
 function connect() {
-  var url = 'ws://localhost:8080/v1/subscribe?eventNames=state.change&eventNames=api.change';
+  var url = 'ws://'+ apiHost() +'/v1/subscribe?eventNames=state.change&eventNames=api.change';
   note('Connecting to: '+url);
   var sock = new WebSocket(url);
 

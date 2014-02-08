@@ -1,6 +1,3 @@
-var API_HOST = 'localhost';
-var API_PORT = 8080;
-
 var http = require('http');
 var express = require('express');
 var hbs = require('express-hbs');
@@ -26,19 +23,19 @@ app.get('/', function(req, res, next) {
 });
 
 // API
-var proxy = httpProxy.createProxyServer({
-  target: {
-    host: API_HOST,
-    port: API_PORT
-  }
-});
+var proxy = httpProxy.createProxyServer({});
 
 var proxyServer = http.createServer(function (req, res) {
-  proxy.web(req, res);
+  var host = req.headers['x-api-host'] || 'localhost:8080';
+  proxy.web(req, res, {target: 'http://'+host});
 });
 
-proxyServer.on('upgrade', function (req, socket, head) {
-  proxy.ws(req, socket, head);
+proxy.on('error', function(err) {
+  console.log('Proxy Error:', err);
+});
+
+proxyServer.on('error', function(err) {
+  console.log('Server Error: ', err);
 });
 
 app.use('/', proxyServer);
