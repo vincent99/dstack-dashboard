@@ -29,7 +29,7 @@ function updateShowMessages() {
 
 function loadHosts(cb, url) {
   note('Loading hosts');
-  ajax('/v1/hosts?removed_null').then(done).fail(fail);
+  ajax('/v1/hosts?limit=1000&removed_null').then(done).fail(fail);
   
   function done(res) {
     var html = [];
@@ -58,7 +58,7 @@ function loadHosts(cb, url) {
 
 function loadInstances(cb, url) {
   //note('Loading instances');
-  ajax(url||'/v1/instances' + (USE_HOSTMAP ? '?removed_null&include=instanceHostMaps' : '')).then(done).fail(fail);
+  ajax(url||'/v1/instances?limit=1000' + (USE_HOSTMAP ? '&removed_null&include=instanceHostMaps' : '')).then(done).fail(fail);
 
   function done(res) {
     renderInstances(res.data);
@@ -108,52 +108,6 @@ function renderInstances(data) {
   });
 }
 
-var pending = {};
-var failed = {};
-var queue = async.queue(_getInstance,4);
-
-function loadInstance(id) {
-  var now = (new Date()).getTime();
-
-  if ( pending[id] )
-  {
-    if ( pending[id] + 5000 < now )
-      return;
-  }
-  else
-  {
-    pending[id] = now;
-  }
-
-  queue.push(id);
-}
-
-function _getInstance(id, cb) {
-  ajax('/v1/instances/'+id+ (USE_HOSTMAP ? '?removed_null&include=instanceHostMaps' : '')).then(done).fail(fail);
-
-  function done(res) {
-    delete pending[id];
-    delete failed[id];
-
-    renderInstances([res]);
-
-    if ( cb )
-      cb(res);
-  }
-
-  function fail(xhr) {
-    alert('Error (' + xhr.status + '): ' + xhr.responseText);
-    if ( cb )
-      cb();
-
-    if ( !failed[id] || failed[id] < MAX_RETRIES )
-    {
-      failed[id] = failed[id]||0 + 1;
-      queue.push(id);
-    }
-  }
-}
-
 function instanceElem(id) {
   var $elem = $('#inst-'+id);
   if ( $elem.length > 0 )
@@ -180,7 +134,7 @@ function instanceTpl(inst) {
 // ------------------------------------
 
 function connect() {
-  var url = 'ws://'+ apiHost() +'/v1/subscribe?eventNames=state.change&eventNames=api.change';
+  var url = 'ws://'+ apiHost() +'/v1/subscribe?include=instanceHostMaps&eventNames=resource.change';
   note('Connecting to: '+url);
   var sock = new WebSocket(url);
 
@@ -196,17 +150,27 @@ function connect() {
     }
 
     note(str);
-//    console.log('Message:',d);
+    //console.log('Message:',d);
 
     if ( d.resourceType == 'host' )
-      hostChanged(d.resourceId, d);
+      hostChanged(d);
     else if ( d.resourceType == 'instance' )
-      instanceChanged(d.resourceId, d);
+      instanceChanged(d);
+  }
+
+  sock.onopen = function() {
+    note('WebSocket opened');
+  }
+
+  sock.onclose = function() {
+    note('WebSocket closed');
+    sock.close();
+    setTimeout(connect, 1000);
   }
 }
 
-function hostChanged(id, change) {
-  var $elem = $('#host-'+id);
+function hostChanged(change) {
+  var $elem = $('#host-'+change.resourceId);
   if ( ! $elem.length )
   {
     note("Heard about host "+ id + " but I don't have a box for that, reloading");
@@ -214,6 +178,6 @@ function hostChanged(id, change) {
   }
 }
 
-function instanceChanged(id, transitioning) {
-  loadInstance(id);
+function instanceChanged(change) {
+  renderInstances([change.data.resource]);
 }
