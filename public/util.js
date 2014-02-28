@@ -16,7 +16,14 @@ function queryParams()
 
 function apiHost() {
   var q = queryParams();
-  return (q.host || 'localhost') + ':' + (q.port||8080);
+  if ( q.host )
+  {
+    return q.host + ":" + (q.port ? q.port : 8080);
+  }
+  else
+  {
+    return window.location.host;
+  }
 }
 
 function ajax(url) {

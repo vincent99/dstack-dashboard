@@ -10,6 +10,11 @@ $('#show-messages').on('click', updateShowMessages);
 
 // ------------------------------------
 
+function gotoApi()
+{
+  window.open('http://'+apiHost()+'/v1','_blank');
+}
+
 function initCheckboxes() {
   var c = cookies();
   $('#show-names').attr('checked', c.names == '1');
@@ -35,9 +40,12 @@ function loadHosts(cb, url) {
     var html = [];
 
     res.data.forEach(function(host) {
+      var url = host.links.self;
+      url += (url.indexOf('?') >= 0 ? '&' : '?') + 'include=agent';
+
       html.push(
         '<div id="host-' + host.id + '" class="host-wrapper">' +
-          '<div class="host-name">'+(host.name || host.id)+'</div>' +
+          '<div class="host-name"><a href="'+url+'" target="_blank">'+(host.name || host.id)+'</a></div>' +
           '<div class="host-contents clearfix"></div>' +
         '</div>'
       );
@@ -126,9 +134,9 @@ function instanceColor(inst) {
 }
 
 function instanceTpl(inst) {
-  return '<div data-transitioning="'+inst.transitioning+'" id="inst-' + inst.id + '" class="inst" style="background-color: '+ instanceColor(inst) + ';">' +
-    '<div class="inst-name">'+(inst.name || inst.id)+'</div>' +
-  '</div>';
+  return '<a href="'+inst.links.self+'" target="_blank" data-transitioning="'+inst.transitioning+'" id="inst-' + inst.id + '" class="inst" style="background-color: '+ instanceColor(inst) + ';">' +
+    '<span class="inst-name">'+(inst.name || inst.id)+'</span>' +
+  '</a>';
 }
 
 // ------------------------------------
@@ -170,12 +178,15 @@ function connect() {
 }
 
 function hostChanged(change) {
+  window.location.href = window.location.href;
+  /*
   var $elem = $('#host-'+change.resourceId);
   if ( ! $elem.length )
   {
     note("Heard about host "+ id + " but I don't have a box for that, reloading");
     loadHosts();
   }
+  */
 }
 
 function instanceChanged(change) {
